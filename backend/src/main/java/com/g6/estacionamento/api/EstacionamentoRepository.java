@@ -1,5 +1,6 @@
 package com.g6.estacionamento.api;
 
+import java.math.BigDecimal;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -24,7 +25,14 @@ public class EstacionamentoRepository {
         jdbc.update(sqlRegistro, placa);
     }
 
-    public void registrarSaida(String placa) {
+    public BigDecimal registrarSaida(String placa) {
         jdbc.update("CALL app.sp_registrar_saida(?)", placa);
+        return jdbc.queryForObject(
+            "SELECT r.valor_tarifa FROM app.registro_estacionamento r " +
+            "JOIN app.veiculo v ON r.id_veiculo = v.id " +
+            "WHERE v.placa = ? ORDER BY r.data_saida DESC LIMIT 1",
+            BigDecimal.class,
+            placa
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.g6.estacionamento.api;
 
+import java.math.BigDecimal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,7 +27,7 @@ public class EstacionamentoController {
 
     @PostMapping("/saida")
     public String registrarSaida(@RequestParam String placa) {
-        repository.registrarSaida(placa);
-        return "Saída registrada! Tarifa calculada no banco de dados.";
+        BigDecimal tarifa = repository.registrarSaida(placa);
+        return String.format("Saída registrada! Tarifa calculada no banco: R$ %.2f", tarifa);
     }
 }
