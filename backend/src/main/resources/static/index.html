@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G6 - Estacionamento Rotativo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">🚗 G6 - Controle de Estacionamento</h2>
+
+    <div class="row">
+        <!-- Formulário de Entrada -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">Registrar Entrada</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label>Placa do Veículo</label>
+                        <input type="text" id="placaEntrada" class="form-control" placeholder="EX: ABC1234" maxlength="7">
+                    </div>
+                    <div class="mb-3">
+                        <label>Modelo</label>
+                        <input type="text" id="modeloEntrada" class="form-control" placeholder="EX: Honda Civic">
+                    </div>
+                    <button class="btn btn-success w-100" onclick="registrarEntrada()">Confirmar Entrada</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Saída -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">Registrar Saída</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label>Placa do Veículo</label>
+                        <input type="text" id="placaSaida" class="form-control" placeholder="EX: ABC1234" maxlength="7">
+                    </div>
+                    <button class="btn btn-danger w-100" onclick="registrarSaida()">Finalizar e Calcular Tarifa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Vagas Ocupadas (Consome a VIEW do Banco) -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">Vagas Ocupadas Agora</div>
+        <div class="card-body">
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th>Placa</th>
+                        <th>Modelo</th>
+                        <th>Data/Hora de Entrada</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaVagas">
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/estacionamento';
+
+    // Carregar a View de Vagas Ocupadas
+    async function carregarVagas() {
+        try {
+            const response = await fetch(`${API_URL}/vagas`);
+            const vagas = await response.json();
+            const tbody = document.getElementById('tabelaVagas');
+            tbody.innerHTML = '';
+            
+            vagas.forEach(vaga => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${vaga.placa}</td>
+                        <td>${vaga.modelo}</td>
+                        <td>${new Date(vaga.data_entrada).toLocaleString('pt-BR')}</td>
+                    </tr>
+                `;
+            });
+        } catch (error) {
+            console.error("Erro ao carregar vagas:", error);
+        }
+    }
+
+    // Registrar Entrada
+    async function registrarEntrada() {
+        const placa = document.getElementById('placaEntrada').value.trim();
+        const modelo = document.getElementById('modeloEntrada').value.trim();
+
+        if(!placa || !modelo) return alert("Preencha Placa e Modelo!");
+
+        await fetch(`${API_URL}/entrada?placa=${placa}&modelo=${modelo}`, { method: 'POST' });
+        alert("Entrada registrada com sucesso!");
+        
+        document.getElementById('placaEntrada').value = '';
+        document.getElementById('modeloEntrada').value = '';
+        carregarVagas();
+    }
+
+    // Registrar Saída
+    async function registrarSaida() {
+        const placa = document.getElementById('placaSaida').value.trim();
+        
+        if(!placa) return alert("Preencha a Placa!");
+
+        const response = await fetch(`${API_URL}/saida?placa=${placa}`, { method: 'POST' });
+        const mensagem = await response.text();
+        
+        alert(mensagem); // Mostra a mensagem de sucesso que veio do Java
+        document.getElementById('placaSaida').value = '';
+        carregarVagas();
+    }
+
+    // Carrega a tabela assim que a tela abre
+    carregarVagas();
+</script>
+
+</body>
+</html>
