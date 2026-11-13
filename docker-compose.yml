@@ -1,0 +1,53 @@
+version: '3.8'
+
+networks:
+  g6_network:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: g6_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: senha_admin_super_secreta
+      POSTGRES_DB: estacionamento_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistência de dados
+      - ./bd/data:/var/lib/postgresql/data
+      # Injeção das configurações otimizadas
+      - ./bd/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./bd/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./bd/backup.sql:/docker-entrypoint-initdb.d/backup.sql
+    command: >
+      postgres 
+      -c config_file=/etc/postgresql/postgresql.conf 
+      -c hba_file=/etc/postgresql/pg_hba.conf
+    networks:
+      - g6_network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: g6_pgbouncer
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_USER=postgres
+      - DB_PASSWORD=senha_admin_super_secreta
+      - DB_NAME=estacionamento_db
+      - AUTH_TYPE=scram-sha-256
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=100
+      - DEFAULT_POOL_SIZE=20
+      - IGNORE_STARTUP_PARAMETERS=extra_float_digits
+    ports:
+      - "6432:5432"
+    depends_on:
+      - db
+    networks:
+      - g6_network
